@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Falling Stars</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #001f3f, #000);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        canvas {
+            display: block;
+            margin: auto;
+            background: transparent;
+        }
+
+        #score {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 24px;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="score">Score: 0</div>
+<div id="message">
+    Game Over<br>
+    Press Space to Restart
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const basket = {
+    width: 120,
+    height: 20,
+    x: canvas.width / 2 - 60,
+    y: canvas.height - 60,
+    speed: 8
+};
+
+let stars = [];
+let score = 0;
+let gameOver = false;
+
+const keys = {
+    left: false,
+    right: false
+};
+
+document.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") keys.left = true;
+    if (e.key === "ArrowRight") keys.right = true;
+
+    if (e.code === "Space" && gameOver) {
+        restartGame();
+    }
+});
+
+document.addEventListener("keyup", e => {
+    if (e.key === "ArrowLeft") keys.left = false;
+    if (e.key === "ArrowRight") keys.right = false;
+});
+
+function createStar() {
+    stars.push({
+        x: Math.random() * (canvas.width - 20),
+        y: -20,
+        radius: 10,
+        speed: 3 + Math.random() * 4
+    });
+}
+
+function update() {
+    if (gameOver) return;
+
+    if (keys.left && basket.x > 0) {
+        basket.x -= basket.speed;
+    }
+
+    if (keys.right && basket.x + basket.width < canvas.width) {
+        basket.x += basket.speed;
+    }
+
+    for (let i = stars.length - 1; i >= 0; i--) {
+        let star = stars[i];
+        star.y += star.speed;
+
+        // Catching stars
+        if (
+            star.y + star.radius >= basket.y &&
+            star.x >= basket.x &&
+            star.x <= basket.x + basket.width
+        ) {
+            stars.splice(i, 1);
+            score++;
+            document.getElementById("score").textContent =
+                "Score: " + score;
+            continue;
+        }
+
+        // Missed star
+        if (star.y > canvas.height) {
+            gameOver = true;
+            document.getElementById("message").style.display = "block";
+        }
+    }
+}
+
+function drawBasket() {
+    ctx.fillStyle = "#ff851b";
+    ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+}
+
+function drawStars() {
+    ctx.fillStyle = "yellow";
+
+    stars.forEach(star => {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBasket();
+    drawStars();
+}
+
+function gameLoop() {
+    update();
+    draw();
+
+    requestAnimationFrame(gameLoop);
+}
+
+function restartGame() {
+    score = 0;
+    stars = [];
+    gameOver = false;
+
+    basket.x = canvas.width / 2 - basket.width / 2;
+
+    document.getElementById("score").textContent = "Score: 0";
+    document.getElementById("message").style.display = "none";
+}
+
+setInterval(() => {
+    if (!gameOver) {
+        createStar();
+    }
+}, 700);
+
+gameLoop();
+
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    basket.y = canvas.height - 60;
+});
+</script>
+
+</body>
+</html>
